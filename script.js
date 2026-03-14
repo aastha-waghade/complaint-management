@@ -322,12 +322,12 @@ let filteredTickets=tickets.filter(t=>{
 let matchStatus=!statusFilter || t.Status===statusFilter;
 let matchPriority=!priorityFilter || t.Priority===priorityFilter;
 
-let matchSearch=
+let matchSearch =
 !searchTicket ||
-t["Ticket ID"].toLowerCase().includes(searchTicket) ||
-t.Name.toLowerCase().includes(searchTicket) ||
-t.Email.toLowerCase().includes(searchTicket) ||
-t.Subject.toLowerCase().includes(searchTicket);
+String(t["Ticket ID"]).toLowerCase().includes(searchTicket) ||
+String(t.Name).toLowerCase().includes(searchTicket) ||
+String(t.Email).toLowerCase().includes(searchTicket) ||
+String(t.Subject).toLowerCase().includes(searchTicket);
 
 return matchStatus && matchPriority && matchSearch;
 

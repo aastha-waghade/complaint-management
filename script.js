@@ -1,4 +1,4 @@
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxt4U3enDQmX-3sHeaTglbQqrxptghPAkIuLCu2BylOuDA-gbo16z7-IX2qxPr6tgqe/exec";
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbzKYNtadLhLBY_RXWmyxa5fOi4hdCo4qDoeLKr3bX-OGyPfq_Fj-taBCNVYLtDevKGT/exec";
 
 let priorityChartInstance=null;
 let monthlyChartInstance=null;
@@ -13,8 +13,19 @@ setupAdminFilters();
 setupFilePreview();
 setupChat();
 loadAnalytics();
+ 
+/* auto refresh analytics every 15 seconds */
+
+setInterval(()=>{
+const analyticsPage=document.getElementById("analytics");
+if(analyticsPage.classList.contains("active")){
+loadAnalytics();
+}
+},15000);
 
 });
+
+
 
 /* =========================
 NAVIGATION
@@ -40,9 +51,13 @@ if(target) target.classList.add("active");
 
 window.scrollTo(0,0);
 
+if(page==="analytics" || page==="home"){
+loadAnalytics();
+}
 });
 
 });
+
 
 }
 
@@ -134,6 +149,8 @@ resultDiv.innerHTML=`
 </div>
 `;
 
+loadAnalytics();
+
 form.reset();
 
 }catch(err){
@@ -160,15 +177,14 @@ if(!btn) return;
 btn.addEventListener("click",trackTicket);
 
 }
-
 async function trackTicket(){
 
-const ticketId=document.getElementById("trackTicketId").value.trim();
+const searchValue=document.getElementById("trackInput").value.trim();
 const resultDiv=document.getElementById("trackResult");
 
-if(!ticketId){
+if(!searchValue){
 
-resultDiv.innerHTML=`<div class="alert error">Enter Ticket ID</div>`;
+resultDiv.innerHTML=`<div class="alert error">Enter Ticket ID, Email or Name</div>`;
 return;
 
 }
@@ -179,21 +195,20 @@ try{
 
 const params=new URLSearchParams();
 params.append("action","track");
-params.append("ticketId",ticketId);
+params.append("search",searchValue);
 
 const res=await fetch(SCRIPT_URL,{
 method:"POST",
 body:params
 });
 
-const data=await res.json();
+const data = await res.json();
 
 if(!data.success) throw new Error("Ticket not found");
 
-const t=data.ticket;
+const tickets = data.tickets || [];
 
-resultDiv.innerHTML=`
-
+resultDiv.innerHTML = tickets.map(t => `
 <div class="ticket-display">
 
 <h3>${t["Ticket ID"]}</h3>
@@ -206,7 +221,7 @@ resultDiv.innerHTML=`
 <p><b>Created:</b> ${new Date(t["Created Date"]).toLocaleString()}</p>
 
 </div>
-`;
+`).join("");
 
 }catch(err){
 
@@ -215,6 +230,9 @@ resultDiv.innerHTML=`<div class="alert error">${err.message}</div>`;
 }
 
 }
+
+
+
 
 /* =========================
 ADMIN LOGIN
@@ -437,11 +455,75 @@ chat.innerHTML+=`<div class="message admin">${reply}</div>`;
 /* =========================
 ANALYTICS
 ========================= */
+async function loadAnalytics(){
 
-function loadAnalytics(){
+try{
+
+const res = await fetch(SCRIPT_URL+"?action=getTickets");
+const data = await res.json();
+
+if(!data.success) return;
+
+const tickets = data.tickets || [];
+
+/* ===== CALCULATIONS ===== */
+
+let total = tickets.length;
+let resolved = 0;
+let pending = 0;
+let progress = 0;
+
+let low = 0;
+let medium = 0;
+let high = 0;
+
+let months = [0,0,0,0,0,0,0,0,0,0,0,0];
+
+tickets.forEach(t=>{
+
+/* STATUS */
+
+if(t.Status==="Resolved") resolved++;
+else if(t.Status==="Pending") pending++;
+else if(t.Status==="In Progress") progress++;
+
+/* PRIORITY */
+
+if(t.Priority==="Low") low++;
+if(t.Priority==="Medium") medium++;
+if(t.Priority==="High") high++;
+
+/* MONTH */
+
+const d = new Date(t["Created Date"]);
+const m = d.getMonth();
+if(!isNaN(m)) months[m]++;
+
+});
+
+/* ===== UPDATE ANALYTICS CARDS ===== */
+
+const totalEl=document.getElementById("totalComplaints");
+const resolvedEl=document.getElementById("resolvedComplaints");
+const pendingEl=document.getElementById("pendingComplaints");
+const progressEl=document.getElementById("progressComplaints");
+
+if(totalEl) totalEl.textContent=total;
+if(resolvedEl) resolvedEl.textContent=resolved;
+if(pendingEl) pendingEl.textContent=pending;
+if(progressEl) progressEl.textContent=progress;
+
+/* ===== SYSTEM OVERVIEW ===== */
+
+const overviewTotal=document.getElementById("overviewTotal");
+const overviewResolved=document.getElementById("overviewResolved");
+
+if(overviewTotal) overviewTotal.textContent=total;
+if(overviewResolved) overviewResolved.textContent=resolved;
+
+/* ===== PRIORITY CHART ===== */
 
 const priorityCanvas=document.getElementById("priorityChart");
-const monthlyCanvas=document.getElementById("monthlyChart");
 
 if(priorityCanvas){
 
@@ -454,7 +536,7 @@ type:"doughnut",
 data:{
 labels:["Low","Medium","High"],
 datasets:[{
-data:[20,45,55],
+data:[low,medium,high],
 backgroundColor:["#10B981","#F59E0B","#EF4444"]
 }]
 },
@@ -469,6 +551,10 @@ plugins:{legend:{position:"bottom"}}
 
 }
 
+/* ===== MONTHLY CHART ===== */
+
+const monthlyCanvas=document.getElementById("monthlyChart");
+
 if(monthlyCanvas){
 
 if(monthlyChartInstance) monthlyChartInstance.destroy();
@@ -478,10 +564,10 @@ monthlyChartInstance=new Chart(monthlyCanvas,{
 type:"line",
 
 data:{
-labels:["Jan","Feb","Mar","Apr","May","Jun"],
+labels:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
 datasets:[{
 label:"Complaints",
-data:[12,19,15,25,22,30],
+data:months,
 borderColor:"#2563EB",
 backgroundColor:"rgba(37,99,235,0.2)",
 fill:true,
@@ -498,7 +584,14 @@ maintainAspectRatio:false
 
 }
 
+}catch(err){
+
+console.error("Analytics error",err);
+
 }
+
+}
+
 
 /* =========================
 FILE PREVIEW
@@ -506,25 +599,55 @@ FILE PREVIEW
 
 function setupFilePreview(){
 
-const fileInput=document.getElementById("fileUpload");
+const fileInput = document.getElementById("fileUpload");
+const resultDiv = document.getElementById("submitResult");
+
 if(!fileInput) return;
 
-fileInput.onchange=function(){
+fileInput.onchange = function(){
 
-const file=this.files[0];
-
+const file = this.files[0];
 if(!file) return;
 
-if(file.size/1024>500){
+/* ===== ALLOWED TYPES ===== */
 
-alert("File must be under 500KB");
-this.value="";
+const allowedTypes = [
+"image/jpeg",
+"image/png",
+"application/pdf"
+];
+
+if(!allowedTypes.includes(file.type)){
+
+resultDiv.innerHTML = "<div class='alert error'>❌ Only JPG, PNG or PDF files are allowed.</div>";
+
+this.value = "";
+return;
 
 }
+
+/* ===== FILE SIZE LIMIT ===== */
+
+const maxSize = 500 * 1024; // 500KB
+
+if(file.size > maxSize){
+
+resultDiv.innerHTML = "<div class='alert error'>❌ File size must be under 500KB.</div>";
+
+this.value = "";
+return;
+
+}
+
+/* SUCCESS MESSAGE */
+
+resultDiv.innerHTML = "<div class='alert success'>✅ File selected successfully.</div>";
 
 };
 
 }
+
+
 
 /* =========================
 HELPERS

@@ -313,15 +313,34 @@ const data=await res.json();
 if(!data.success) throw new Error();
 
 const tickets=data.tickets||[];
+const statusFilter=document.getElementById("filterStatus")?.value || "";
+const priorityFilter=document.getElementById("filterPriority")?.value || "";
+const searchTicket=document.getElementById("searchTicket")?.value.toLowerCase() || "";
 
-if(tickets.length===0){
+let filteredTickets=tickets.filter(t=>{
+
+let matchStatus=!statusFilter || t.Status===statusFilter;
+let matchPriority=!priorityFilter || t.Priority===priorityFilter;
+
+let matchSearch=
+!searchTicket ||
+t["Ticket ID"].toLowerCase().includes(searchTicket) ||
+t.Name.toLowerCase().includes(searchTicket) ||
+t.Email.toLowerCase().includes(searchTicket) ||
+t.Subject.toLowerCase().includes(searchTicket);
+
+return matchStatus && matchPriority && matchSearch;
+
+});
+
+if(filteredTickets.length===0){
 
 resultDiv.innerHTML="No tickets found";
 return;
 
 }
 
-resultDiv.innerHTML=tickets.map(t=>`
+resultDiv.innerHTML=filteredTickets.map(t=>`
 
 <div class="ticket-item">
 

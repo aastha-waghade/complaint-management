@@ -104,17 +104,17 @@ issue resolution progress through a centralized platform.
 <div class="stats-grid">
 
 <div class="stat-box">
-<h3>100+</h3>
+<h3 id="overviewTotal">0</h3>
 <p>Complaints Registered</p>
 </div>
 
 <div class="stat-box">
-<h3>80+</h3>
+<h3 id="overviewResolved">0</h3>
 <p>Issues Resolved</p>
 </div>
 
 <div class="stat-box">
-<h3>10+</h3>
+<h3 id="overviewStaff">10+</h3>
 <p>Active Support Staff</p>
 </div>
 
@@ -122,7 +122,6 @@ issue resolution progress through a centralized platform.
 <h3>24/7</h3>
 <p>System Availability</p>
 </div>
-
 </div>
 </div>
 
@@ -234,9 +233,8 @@ Submit your complaint and our support team will assist you.
 </div>
 
 <div class="form-group">
-<label>Upload File</label>
-<input type="file" id="fileUpload">
-</div>
+<label for="fileUpload">Upload File (JPG, PNG, PDF | Max 500KB)</label>
+<input type="file" id="fileUpload" accept=".jpg,.jpeg,.png,.pdf"></div>
 
 <button type="submit" id="submitBtn">Submit Complaint</button>
 
@@ -255,7 +253,7 @@ Submit your complaint and our support team will assist you.
 
 <div class="track-box">
 
-<input type="text" id="trackTicketId" placeholder="Enter Ticket ID">
+<input type="text" id="trackInput" placeholder="Enter Ticket ID, Email or Name">
 
 <button id="trackBtn">Track Ticket</button>
 
@@ -299,28 +297,24 @@ Submit your complaint and our support team will assist you.
 
 <h2>Analytics Dashboard</h2>
 
-<div class="analytics-cards">
-
 <div class="analytics-card">
-<h3>5250</h3>
+<h3 id="totalComplaints">0</h3>
 <p>Total Complaints</p>
 </div>
 
 <div class="analytics-card">
-<h3>4025</h3>
+<h3 id="resolvedComplaints">0</h3>
 <p>Resolved</p>
 </div>
 
 <div class="analytics-card">
-<h3>1225</h3>
+<h3 id="pendingComplaints">0</h3>
 <p>Pending</p>
 </div>
 
 <div class="analytics-card">
-<h3>52</h3>
+<h3 id="progressComplaints">0</h3>
 <p>In Progress</p>
-</div>
-
 </div>
 
 <div class="chart-container">
@@ -378,7 +372,7 @@ Submit your complaint and our support team will assist you.
 
 </div>
 
-<div id="adminResult"></div>
+<div id="adminResult" class="admin-tickets"></div>
 
 </div>
 
@@ -405,5 +399,4 @@ nav.classList.toggle("active");
 </script>
 
 </body>
-
 </html>
